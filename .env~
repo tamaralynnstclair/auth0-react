@@ -1,4 +1,0 @@
-VITE_AUTH0_DOMAIN=caterina-dev.us.auth0.com
-VITE_AUTH0_CLIENT_ID=frjbYGj3AB2vjPoYAZslQdfJAY32t89b
-REDIRECT_URI=http://localhost:5173
-AUTH0_AUDIENCE=http://localhost
