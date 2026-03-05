@@ -1,0 +1,59 @@
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import './index.css'; // Importing the main CSS file
+import App from './App.tsx';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { Auth0Provider } from '@auth0/auth0-react';
+import { generateKeyPairSync, randomBytes } from 'node:crypto';
+//import jwt from 'jsonwebtoken';
+
+
+
+// Generate a DPoP Key Pair
+const keyPair = generateKeyPairSync('ec', {
+  namedCurve: 'P-256'
+});
+
+// Construct the DPoP Proof JWT for the token request
+const jti = randomBytes(16).toString('base64url');
+const jwk = keyPair.publicKey.export({ format: 'jwk' });
+const dpopHeader = jwt.sign({
+    jti,
+    htm: 'POST',
+    htu: 'https://dev-akqvi40pklt8c64p.us.auth0.com/oauth/token',
+    iat: Date.now() / 1000,
+  },
+  keyPair,privateKey,
+  {
+     algorithm: 'ES256',
+     header: {
+       typ: 'dpop+jwt',
+       jwk,
+  },
+});
+
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <Auth0Provider
+      domain={import.meta.env.VITE_AUTH0_DOMAIN}
+      clientId={import.meta.env.VITE_AUTH0_CLIENT_ID}
+      authorizationParams={{
+        redirect_uri: window.location.origin,
+	audience: "https://localhost:5173",
+        scope: "openid profile email offline_access",
+      }}
+// The key DPoP line 
+//useRefreshTokens={true}
+//cacheLocation="localstorage"
+// Enable DPoP
+//advancedOptions={{
+//  useDpop: true
+//}}
+// End Dpop
+>
+      <App />
+    </Auth0Provider>
+  </StrictMode>
+);

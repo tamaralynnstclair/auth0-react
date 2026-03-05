@@ -1,0 +1,131 @@
+import { useState } from 'react';
+import { useAuth0 } from '@auth0/auth0-react';
+import LoginButton from './LoginButton';
+import LogoutButton from './LogoutButton';
+import Profile from './Profile';
+
+function App() {
+  const { 
+    isAuthenticated, 
+    isLoading, 
+    error, 
+    getAccessTokenSilently, 
+    generateDpopProof 
+  } = useAuth0();
+
+  const [apiData, setApiData] = useState<any>(null);
+  const [isCallingApi, setIsCallingApi] = useState(false);
+
+  // Function to call your API using the DPoP mechanism
+  const callSecureApi = async () => {
+    setIsCallingApi(true);
+    try {
+      // 1. Get the raw Access Token from the SDK
+      const token = await getAccessTokenSilently();
+
+      // 2. Define your target (Replace with your actual backend URL)
+      const url = "https://api.testapp.com";
+      const method = "GET";
+
+      // 3. Generate the required DPoP Proof for this specific request
+      // This is the part that uses the 'Dpop' lowercase key we fixed!
+      const dpopProof = await generateDpopProof({
+        accessToken: token,
+        url,
+        method,
+      });
+
+      // 4. Perform the Fetch request
+      const response = await fetch(url, {
+        method,
+        headers: {
+          // Note: The scheme is 'DPoP', not 'Bearer'
+          Authorization: `DPoP ${token}`,
+          DPoP: dpopProof,
+        },
+      });
+
+      const data = await response.json();
+      setApiData(data);
+    } catch (err) {
+      console.error("DPoP API Call Failed:", err);
+      setApiData({ error: "Failed to fetch data with DPoP" });
+    } finally {
+      setIsCallingApi(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="app-container">
+        <div className="loading-state">
+          <div className="loading-text">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="app-container">
+        <div className="error-state">
+          <div className="error-title">Oops!</div>
+          <div className="error-message">Something went wrong</div>
+          <div className="error-sub-message">{error.message}</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="app-container">
+      <div className="main-card-wrapper">
+        <img
+          src="https://cdn.auth0.com/quantum-assets/dist/latest/logos/auth0/auth0-lockup-en-ondark.png"
+          alt="Auth0 Logo"
+          className="auth0-logo"
+          onError={(e) => {
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+        <h1 className="main-title">Welcome to Sample0</h1>
+
+        {isAuthenticated ? (
+          <div className="logged-in-section">
+            <div className="logged-in-message">✅ Successfully authenticated with DPoP!</div>
+            
+            <h2 className="profile-section-title">Your Profile</h2>
+            <div className="profile-card">
+              <Profile />
+            </div>
+
+            <div className="api-actions" style={{ margin: '20px 0' }}>
+              <button 
+                onClick={callSecureApi} 
+                disabled={isCallingApi}
+                className="api-button" // Ensure you have styles for this or use inline styles
+              >
+                {isCallingApi ? 'Calling API...' : 'Test DPoP API Call'}
+              </button>
+              
+              {apiData && (
+                <pre style={{ textAlign: 'left', background: '#f4f4f4', padding: '10px', borderRadius: '5px', fontSize: '12px', color: '#333' }}>
+                  {JSON.stringify(apiData, null, 2)}
+                </pre>
+              )}
+            </div>
+
+            <LogoutButton />
+          </div>
+        ) : (
+          <div className="action-card">
+            <p className="action-text">Get started by signing in to your account</p>
+            <LoginButton />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default App;

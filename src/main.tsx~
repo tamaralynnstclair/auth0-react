@@ -1,0 +1,53 @@
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import './index.css'; // Importing the main CSS file
+import App from './App.tsx';
+import { Auth0Provider } from '@auth0/auth0-react';
+import { useAuth0 } from "@auth0/auth-react";
+
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <Auth0Provider
+      domain={import.meta.env.VITE_AUTH0_DOMAIN}
+      clientId={import.meta.env.VITE_AUTH0_CLIENT_ID}
+      useDpop={true}
+      cacheLocation="localstorage"     
+      authorizationParams={{
+        redirect_uri: window.location.origin
+      }}
+      refreshTokens={true}
+    >
+      <App />
+    </Auth0Provider>
+const MyComponent = () => {
+   // Step 1 Get the access token
+   const accessToken = await getAccesTokenSilently();
+
+   const url = "https://api.testapp.com
+   const method = "GET";
+
+   // Step 2 Generate the unique Dpop Proof for this specific request
+   const dpopProof = await generateDpopProof({
+     accessToken,
+     url,
+     method,
+   });
+
+   // Step 3 Fire the request
+   const response - await fetch(url, {
+     method,
+     headers: {
+       // Auth0 DPoP requirement: "DPoP" prefix, not "Bearer"
+       Authorization: 'DPoP ${accessToken}',
+       DPoP: dpopProof,
+     },
+   });
+
+   console.log(await response.json());
+ };
+
+ return <button onClick={callApi}>Call API</button>;
+};
+  </StrictMode>
+);
